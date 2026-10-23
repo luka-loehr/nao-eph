@@ -19,6 +19,10 @@ struct Globals {
     light_color: array<vec4<f32>, 4>,
     // x: light count, y: width, z: height, w: tan(fov_y / 2)
     params: vec4<f32>,
+    // rgb: fog colour, a: distance where fog starts
+    fog: vec4<f32>,
+    // x: fog falloff distance, y: 1 in the studio (backdrop colour instead of the sky)
+    fog_params: vec4<f32>,
 };
 
 struct Instance {
@@ -186,7 +190,7 @@ fn fs_main(in: VsOut, @builtin(front_facing) front: bool) -> FsOut {
     let f0 = mix(vec3<f32>(0.04), albedo, metalness);
     let env_fresnel = f0 + (max(vec3<f32>(1.0 - roughness), f0) - f0) * pow(1.0 - n_dot_v, 5.0);
     let ambient = environment(n) * globals.sky.a * albedo * (1.0 - metalness)
-        + environment(reflect(-v, n)) * env_fresnel * (1.0 - roughness * 0.75) * 0.45;
+        + environment(reflect(-v, n)) * env_fresnel * (1.0 - roughness * 0.75) * 0.25;
 
     var out: FsOut;
     out.direct = vec4<f32>(direct, alpha);

@@ -20,12 +20,16 @@ use gpui::{
     prelude::*, px, rgba, size,
 };
 use hulk::{Action, HulkState, Message};
-use render::{Camera, Renderer};
+use render::{Camera, Renderer, View};
 use std::{
     io::{BufRead, BufReader},
     path::{Path, PathBuf},
     process::{Child, Command as Process, Stdio},
-    sync::{Arc, Mutex, mpsc::Sender},
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicBool, Ordering},
+        mpsc::Sender,
+    },
     thread,
     time::{Duration, Instant},
 };
@@ -170,6 +174,20 @@ fn camera_facing_robot(scene: &scene::Scene) -> Camera {
     }
 }
 
+/// Studio: close in front of the robot, at its own height.
+fn camera_studio(scene: &scene::Scene) -> Camera {
+    let mut camera = camera_facing_robot(scene);
+    camera.target.z = 0.28;
+    camera.yaw -= 0.12;
+    camera.pitch = 0.06;
+    camera.distance = 1.35;
+    camera
+}
+
+fn robot_node(scene: &scene::Scene) -> Option<usize> {
+    scene.robots.iter().find(|r| r.name == "NAO").map(|r| r.node)
+}
+
 /// Eases the rendered camera toward the requested one so orbiting and zooming feel smooth.
 fn ease(from: Camera, to: Camera) -> Camera {
     let k = 0.35;
@@ -190,6 +208,7 @@ fn ease(from: Camera, to: Camera) -> Camera {
 #[derive(Default)]
 struct ViewInput {
     camera: Option<Camera>,
+    view: View,
     width: u32,
     height: u32,
 }
@@ -218,16 +237,20 @@ fn spawn_renderer(
             }
         };
         let mut shown: Option<Camera> = None;
-        let mut last = (u64::MAX, None::<Camera>, 0u32, 0u32);
+        let mut last = (u64::MAX, None::<Camera>, 0u32, 0u32, View::World);
         let mut last_render = Instant::now();
         loop {
             thread::sleep(Duration::from_millis(6));
             let s = state.lock().unwrap();
             let Some(scene) = s.scene.as_ref() else { continue };
-            let (target, width, height) = {
+            let (target, width, height, mode) = {
                 let mut v = view.lock().unwrap();
-                let camera = *v.camera.get_or_insert_with(|| camera_facing_robot(scene));
-                (camera, v.width, v.height)
+                let mode = v.view;
+                let camera = *v.camera.get_or_insert_with(|| match mode {
+                    View::World => camera_facing_robot(scene),
+                    View::Studio { .. } => camera_studio(scene),
+                });
+                (camera, v.width, v.height, mode)
             };
             if width == 0 || height == 0 {
                 continue;
@@ -237,11 +260,11 @@ fn spawn_renderer(
             // Life mode looks at whoever is watching.
             *viewer.lock().unwrap() = Some(camera.eye());
             // Re-render on any change, and every 250 ms so freshly downloaded textures appear.
-            let key = (s.revision, Some(camera), width, height);
+            let key = (s.revision, Some(camera), width, height, mode);
             if key == last && last_render.elapsed() < Duration::from_millis(250) {
                 continue;
             }
-            let pixels = renderer.render(scene, s.scene_generation, &camera, width, height);
+            let pixels = renderer.render(scene, s.scene_generation, &camera, width, height, mode, robot_node(scene));
             drop(s);
             last = key;
             last_render = Instant::now();
@@ -266,6 +289,7 @@ struct SimApp {
     stale: Vec<Arc<RenderImage>>,
     drag: Option<(Point<Pixels>, MouseButton)>,
     show_console: bool,
+    studio: Arc<AtomicBool>,
     _poll: Task<()>,
 }
 
@@ -277,6 +301,7 @@ impl SimApp {
         actions: Sender<Message>,
         view: Arc<Mutex<ViewInput>>,
         frame: Arc<Mutex<FrameSlot>>,
+        studio: Arc<AtomicBool>,
         cx: &mut Context<Self>,
     ) -> Self {
         let poll = cx.spawn(async move |this, cx| {
@@ -306,6 +331,7 @@ impl SimApp {
             stale: Vec::new(),
             drag: None,
             show_console: false,
+            studio,
             _poll: poll,
         }
     }
@@ -326,6 +352,26 @@ impl SimApp {
             self.stale.push(old);
         }
         true
+    }
+
+    fn set_view(&mut self, mode: View, cx: &mut Context<Self>) {
+        let mut v = self.view.lock().unwrap();
+        if v.view != mode {
+            // A fresh default camera when switching between world and studio.
+            if matches!(v.view, View::World) != matches!(mode, View::World) {
+                v.camera = None;
+            }
+            v.view = mode;
+        }
+        drop(v);
+        let in_studio = !matches!(mode, View::World);
+        self.studio.store(in_studio, Ordering::Relaxed);
+        // The studio is for standing still: stop any walking motion.
+        let action = self.hulk.lock().unwrap().action;
+        if in_studio && matches!(action, Action::WalkForward | Action::WalkCircle | Action::TurnLeft) {
+            let _ = self.actions.send(Message::Action(Action::Stand));
+        }
+        cx.notify();
     }
 
     fn with_camera(&self, f: impl FnOnce(&mut Camera)) {
@@ -376,6 +422,7 @@ impl SimApp {
             let h = self.hulk.lock().unwrap();
             (h.connected, h.action)
         };
+        let mode = self.view.lock().unwrap().view;
         let live = connection == Connection::Connected && run_state != RunState::Paused && hulk_connected;
         let status = match (connection, hulk_connected) {
             (Connection::Connecting, _) => "Starting Webots…",
@@ -388,7 +435,8 @@ impl SimApp {
         let motions: Vec<AnyElement> = Action::MOTIONS
             .iter()
             .map(|&a| {
-                nav_row(a.label(), action == a, hulk_connected)
+                let walks = matches!(a, Action::WalkForward | Action::WalkCircle | Action::TurnLeft);
+                nav_row(a.label(), action == a, hulk_connected && !(walks && mode != View::World))
                     .on_click(cx.listener(move |this, _, _, _| {
                         let _ = this.actions.send(Message::Action(a));
                     }))
@@ -458,6 +506,22 @@ impl SimApp {
                             .flex()
                             .flex_col()
                             .gap_0p5()
+                            .child(nav_row("World", mode == View::World, true).on_click(cx.listener(
+                                |this, _, _, cx| this.set_view(View::World, cx),
+                            )))
+                            .child(nav_row("Studio", mode != View::World, true).on_click(cx.listener(
+                                move |this, _, _, cx| {
+                                    // Dark unless the white backdrop was chosen in this session.
+                                    let dark = !matches!(mode, View::Studio { dark: false });
+                                    this.set_view(View::Studio { dark }, cx)
+                                },
+                            )))
+                            .when(mode != View::World, |d| {
+                                let dark = matches!(mode, View::Studio { dark: true });
+                                d.child(toggle_row("dark", "Dark backdrop", dark, true, None).on_click(cx.listener(
+                                    move |this, _, _, cx| this.set_view(View::Studio { dark: !dark }, cx),
+                                )))
+                            })
                             .child(
                                 toggle_row("console", "Console", self.show_console, true, None).on_click(
                                     cx.listener(|this, _, _, cx| {
@@ -673,7 +737,7 @@ fn snapshot(world: &Path, out: &Path, action: Option<Action>) -> Result<()> {
         let hulk_state = Arc::new(Mutex::new(HulkState { connected: false, action: Action::Stand }));
         let actions = hulk::spawn(hulk_state.clone());
         let viewer = Arc::new(Mutex::new(None));
-        life::spawn(state.clone(), hulk_state.clone(), viewer, actions.clone());
+        life::spawn(state.clone(), hulk_state.clone(), viewer, Arc::new(AtomicBool::new(false)), actions.clone());
         let started = Instant::now();
         while !hulk_state.lock().unwrap().connected {
             anyhow::ensure!(started.elapsed() < Duration::from_secs(120), "HULKs did not connect");
@@ -689,7 +753,13 @@ fn snapshot(world: &Path, out: &Path, action: Option<Action>) -> Result<()> {
         for _ in 0..2 {
             let s = state.lock().unwrap();
             let scene = s.scene.as_ref().context("no scene")?;
-            pixels = renderer.render(scene, s.scene_generation, &camera_facing_robot(scene), width, height);
+            let view = match std::env::var("NAO_EPH_VIEW").as_deref() {
+                Ok("studio") => View::Studio { dark: false },
+                Ok("studio-dark") => View::Studio { dark: true },
+                _ => View::World,
+            };
+            let camera = if view == View::World { camera_facing_robot(scene) } else { camera_studio(scene) };
+            pixels = renderer.render(scene, s.scene_generation, &camera, width, height, view, robot_node(scene));
             drop(s);
             thread::sleep(Duration::from_secs(2));
         }
@@ -705,7 +775,21 @@ fn snapshot(world: &Path, out: &Path, action: Option<Action>) -> Result<()> {
     result
 }
 
+/// macOS window restoration can deadlock GPUI when it reopens a window from an earlier session
+/// (e.g. after the app was force-quit). The app always starts fresh, so turn restoration off.
+fn disable_window_restoration() {
+    let Ok(home) = std::env::var("HOME") else { return };
+    for id in ["com.lukaloehr.nao-eph", "com.lukaloehr.nao-eph-sim.dev"] {
+        let saved = Path::new(&home).join(format!("Library/Saved Application State/{id}.savedState"));
+        let _ = std::fs::remove_dir_all(saved);
+        let _ = Process::new("/usr/bin/defaults")
+            .args(["write", id, "ApplePersistenceIgnoreState", "-bool", "true"])
+            .status();
+    }
+}
+
 fn main() -> Result<()> {
+    disable_window_restoration();
     let mut args = std::env::args().skip(1);
     let mut world = default_world();
     let mut snapshot_out = None;
@@ -733,11 +817,18 @@ fn main() -> Result<()> {
     // Start in Life mode so the robot behaves like a real NAO from the first second.
     let hulk_state = Arc::new(Mutex::new(HulkState { connected: false, action: Action::Life }));
     let actions = hulk::spawn(hulk_state.clone());
-    let view = Arc::new(Mutex::new(ViewInput::default()));
+    // NAO_EPH_VIEW=studio or studio-dark opens straight into the studio.
+    let start_view = match std::env::var("NAO_EPH_VIEW").as_deref() {
+        Ok("studio") => View::Studio { dark: false },
+        Ok("studio-dark") => View::Studio { dark: true },
+        _ => View::World,
+    };
+    let view = Arc::new(Mutex::new(ViewInput { view: start_view, ..Default::default() }));
     let frame = Arc::new(Mutex::new(FrameSlot::default()));
     let viewer = Arc::new(Mutex::new(None));
+    let studio = Arc::new(AtomicBool::new(start_view != View::World));
     spawn_renderer(world.parent().unwrap().to_path_buf(), state.clone(), view.clone(), frame.clone(), viewer.clone());
-    life::spawn(state.clone(), hulk_state.clone(), viewer, actions.clone());
+    life::spawn(state.clone(), hulk_state.clone(), viewer, studio.clone(), actions.clone());
 
     Application::new().run(move |cx: &mut App| {
         let quit_children = children.clone();
@@ -766,7 +857,7 @@ fn main() -> Result<()> {
                 ..Default::default()
             },
             |_, cx| {
-                cx.new(|cx| SimApp::new(state, hulk_state, commands, actions, view, frame, cx))
+                cx.new(|cx| SimApp::new(state, hulk_state, commands, actions, view, frame, studio, cx))
             },
         )
         .expect("open window");

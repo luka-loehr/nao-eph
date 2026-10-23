@@ -28,6 +28,16 @@ const INSTANCE_STRIDE: u64 = 256;
 const MAX_LIGHTS: usize = 4;
 const FOV_Y: f32 = 40.0;
 
+/// What the viewport shows.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub enum View {
+    /// The house, yard and street.
+    #[default]
+    World,
+    /// Only the robot, on a photo-studio cyclorama with studio lighting.
+    Studio { dark: bool },
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Camera {
     pub target: Vec3,
@@ -84,6 +94,10 @@ struct Globals {
     light_color: [[f32; 4]; MAX_LIGHTS],
     /// x: light count, y: width, z: height, w: tan(fov_y / 2)
     params: [f32; 4],
+    /// rgb: fog colour, a: distance where fog starts
+    fog: [f32; 4],
+    /// x: fog falloff distance, y: 1 in the studio (backdrop colour instead of the sky)
+    fog_params: [f32; 4],
 }
 
 #[repr(C)]
@@ -240,6 +254,7 @@ pub struct Renderer {
     sampler: wgpu::Sampler,
     white: wgpu::BindGroup,
     shadow_view: wgpu::TextureView,
+    backdrop: GpuMesh,
     targets: Option<Targets>,
     // Per loaded scene.
     generation: u64,
@@ -508,6 +523,22 @@ impl Renderer {
         let backdrop = image::RgbaImage::from_pixel(1, 1, image::Rgba([52, 54, 60, 255]));
         let sky_group = create_cube_group(&device, &queue, &sky_layout, &sampler, &std::array::from_fn(|_| backdrop.clone()));
 
+        let backdrop_mesh = crate::mesh::cyclorama();
+        let backdrop = GpuMesh {
+            vertices: device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("backdrop"),
+                contents: bytemuck::cast_slice(&backdrop_mesh.vertices),
+                usage: wgpu::BufferUsages::VERTEX,
+            }),
+            indices: device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("backdrop"),
+                contents: bytemuck::cast_slice(&backdrop_mesh.indices),
+                usage: wgpu::BufferUsages::INDEX,
+            }),
+            count: backdrop_mesh.indices.len() as u32,
+            center: Vec3::ZERO,
+        };
+
         Ok(Self {
             device,
             queue,
@@ -532,6 +563,7 @@ impl Renderer {
             sampler,
             white,
             shadow_view,
+            backdrop,
             targets: None,
             generation: u64::MAX,
             meshes: Vec::new(),
@@ -687,20 +719,39 @@ impl Renderer {
     }
 
     /// Renders the scene and returns tightly packed BGRA pixels.
-    pub fn render(&mut self, scene: &Scene, generation: u64, camera: &Camera, width: u32, height: u32) -> Vec<u8> {
+    /// `robot` is the scene node of the robot; the studio view shows only that subtree.
+    #[allow(clippy::too_many_arguments)]
+    pub fn render(
+        &mut self,
+        scene: &Scene,
+        generation: u64,
+        camera: &Camera,
+        width: u32,
+        height: u32,
+        view: View,
+        robot: Option<usize>,
+    ) -> Vec<u8> {
         let (width, height) = (width.max(16), height.max(16));
         self.sync_scene(scene, generation);
         self.ensure_targets(width, height);
 
-        // Dollhouse cutaway: hide walls whose outside faces the camera.
         let eye = camera.eye();
-        let mut draws = scene.draws();
+        let robot_world = robot.and_then(|r| scene.world_matrix_of(r));
+        let studio = match (view, robot_world) {
+            (View::Studio { dark }, Some(m)) => Some((dark, m)),
+            _ => None,
+        };
+        let mut draws = match (studio, robot) {
+            (Some(_), Some(r)) => scene.draws_under(r),
+            _ => scene.draws(),
+        };
+        // Dollhouse cutaway (world view): hide walls whose outside faces the camera.
         let wall_centers: Vec<Vec2> = draws
             .iter()
             .filter(|d| d.cutaway)
             .map(|d| d.world.transform_point3(self.meshes[d.mesh].center).truncate())
             .collect();
-        if !wall_centers.is_empty() {
+        if studio.is_none() && !wall_centers.is_empty() {
             let room = wall_centers.iter().sum::<Vec2>() / wall_centers.len() as f32;
             // Like The Sims: the roof disappears once you zoom in on the house.
             let near_house = (eye - room.extend(1.4)).length() < 30.0;
@@ -717,12 +768,13 @@ impl Renderer {
             });
         }
 
-        if draws.len() as u64 > self.instance_capacity {
-            let capacity = (draws.len() as u64).next_power_of_two();
+        // One extra instance slot for the studio backdrop.
+        if draws.len() as u64 + 1 > self.instance_capacity {
+            let capacity = (draws.len() as u64 + 1).next_power_of_two();
             (self.instances, self.instance_group) = create_instances(&self.device, &self.instance_layout, capacity);
             self.instance_capacity = capacity;
         }
-        let mut instance_bytes = vec![0u8; draws.len() * INSTANCE_STRIDE as usize];
+        let mut instance_bytes = vec![0u8; (draws.len() + 1) * INSTANCE_STRIDE as usize];
         for (i, d) in draws.iter().enumerate() {
             let m: &Material = &scene.materials[d.material];
             let textured = m.base_color_map.is_some() && self.material_groups[d.material].is_some();
@@ -738,18 +790,73 @@ impl Renderer {
             instance_bytes[start..start + std::mem::size_of::<Instance>()]
                 .copy_from_slice(bytemuck::bytes_of(&inst));
         }
+        // The backdrop stands where the robot is, turned with it, and stays level.
+        let backdrop_slot = draws.len();
+        if let Some((dark, robot)) = studio {
+            let facing = robot.x_axis.truncate();
+            let yaw = facing.y.atan2(facing.x);
+            let p = robot.w_axis.truncate();
+            let model = Mat4::from_translation(Vec3::new(p.x, p.y, 0.0)) * Mat4::from_rotation_z(yaw);
+            let (color, roughness) = if dark { (Vec3::splat(0.014), 0.6) } else { (Vec3::splat(0.92), 0.7) };
+            let inst = Instance {
+                model: model.to_cols_array_2d(),
+                normal: model.inverse().transpose().to_cols_array_2d(),
+                base_color: Vec4::from((color, 1.0)).to_array(),
+                params: [roughness, 0.0, 0.0, 0.0],
+                emissive: [0.0; 4],
+                uv_scale: [1.0, 1.0, 0.0, 0.0],
+            };
+            let start = backdrop_slot * INSTANCE_STRIDE as usize;
+            instance_bytes[start..start + std::mem::size_of::<Instance>()]
+                .copy_from_slice(bytemuck::bytes_of(&inst));
+        }
         self.queue.write_buffer(&self.instances, 0, &instance_bytes);
 
-        // Warm afternoon sun coming in over the window wall; its shadow box covers the whole room.
-        let sun_dir = Vec3::new(-0.3, -0.55, -0.78).normalize();
-        let focus = camera.target;
-        let extent = (camera.distance * 0.9).clamp(5.0, 45.0);
+        // World: warm afternoon sun over the window wall, shadow box following the view.
+        // Studio: a key light from the camera's upper left, shadow box tight around the robot.
+        let (sun_dir, sun_intensity, sun_color, focus, extent) = match studio {
+            Some((dark, robot)) => {
+                let center = robot.w_axis.truncate() * Vec3::new(1.0, 1.0, 0.0) + Vec3::Z * 0.3;
+                let forward = (eye - center).normalize();
+                let left = Vec3::Z.cross(forward).normalize();
+                let key = center + forward * 1.5 + left * 1.1 + Vec3::Z * 1.7;
+                let intensity = if dark { 3.1 } else { 2.4 };
+                ((center - key).normalize(), intensity, [1.0, 0.97, 0.93, 0.0], center, 2.5)
+            }
+            None => (
+                Vec3::new(-0.3, -0.55, -0.78).normalize(),
+                2.4,
+                [1.0, 0.9, 0.78, 0.0],
+                camera.target,
+                (camera.distance * 0.9).clamp(5.0, 45.0),
+            ),
+        };
         let light_view = glam::camera::rh::view::look_at_mat4(focus - sun_dir * 60.0, focus, Vec3::Z);
         let light_proj = glam::camera::rh::proj::directx::orthographic(-extent, extent, -extent, extent, 1.0, 140.0);
         let mut light_pos = [[0.0; 4]; MAX_LIGHTS];
         let mut light_color = [[0.0; 4]; MAX_LIGHTS];
         let mut light_count = 0;
-        for light in scene.point_lights.iter().take(MAX_LIGHTS) {
+        if let Some((dark, robot)) = studio {
+            // Two rim lights behind the robot draw a bright edge around its silhouette.
+            let center = robot.w_axis.truncate() * Vec3::new(1.0, 1.0, 0.0);
+            let forward = (eye - center).with_z(0.0).normalize_or_zero();
+            let left = Vec3::Z.cross(forward).normalize_or_zero();
+            let (color, strength) = if dark { ([0.8, 0.88, 1.0], 3.2) } else { ([1.0, 1.0, 1.0], 1.2) };
+            for side in [-1.0, 1.0] {
+                let p = center - forward * 0.75 + left * side * 0.65 + Vec3::Z * 0.95;
+                light_pos[light_count] = [p.x, p.y, p.z, 4.0];
+                light_color[light_count] = [color[0] * strength, color[1] * strength, color[2] * strength, 0.0];
+                light_count += 1;
+            }
+            // A soft pool of light on the wall behind the robot (backdrop frame: wall at x = -3.6).
+            let facing = robot.x_axis.truncate().with_z(0.0).normalize_or_zero();
+            let wash = center - facing * 2.9 + Vec3::Z * 1.25;
+            let wash_strength = if dark { 3.4 } else { 0.8 };
+            light_pos[light_count] = [wash.x, wash.y, wash.z, 2.4];
+            light_color[light_count] = [wash_strength, wash_strength * 0.97, wash_strength * 0.93, 0.0];
+            light_count += 1;
+        }
+        for light in scene.point_lights.iter().take(if studio.is_some() { 0 } else { MAX_LIGHTS }) {
             let Some(world) = scene.world_matrix_of(light.node) else { continue };
             let p = world.transform_point3(light.location);
             light_pos[light_count] = [p.x, p.y, p.z, 7.0];
@@ -765,13 +872,32 @@ impl Renderer {
             view: view.to_cols_array_2d(),
             light_view_proj: (light_proj * light_view).to_cols_array_2d(),
             camera_pos: Vec4::from((eye, 1.0)).to_array(),
-            sun_dir: Vec4::from((sun_dir, 2.4)).to_array(),
-            sun_color: [1.0, 0.9, 0.78, 0.0],
-            sky: [0.58, 0.66, 0.8, 0.42],
-            ground: [0.46, 0.36, 0.27, 0.0],
+            sun_dir: Vec4::from((sun_dir, sun_intensity)).to_array(),
+            sun_color,
+            // In the studio, "sky" is a big overhead softbox: it is what the glossy shell reflects.
+            sky: match studio {
+                Some((true, _)) => [0.2, 0.21, 0.23, 0.08],
+                Some((false, _)) => [0.96, 0.96, 0.98, 0.55],
+                None => [0.58, 0.66, 0.8, 0.42],
+            },
+            ground: match studio {
+                Some((true, _)) => [0.012, 0.013, 0.016, 0.0],
+                Some((false, _)) => [0.78, 0.78, 0.8, 0.0],
+                None => [0.46, 0.36, 0.27, 0.0],
+            },
             light_pos,
             light_color,
             params: [light_count as f32, width as f32, height as f32, (FOV_Y.to_radians() * 0.5).tan()],
+            fog: match studio {
+                Some((true, _)) => [0.012, 0.013, 0.015, 4.5],
+                Some((false, _)) => [0.93, 0.93, 0.95, 3.0],
+                None => [0.0, 0.0, 0.0, 16.0],
+            },
+            fog_params: match studio {
+                Some((true, _)) => [8.0, 1.0, 0.0, 0.0],
+                Some((false, _)) => [9.0, 1.0, 0.0, 0.0],
+                None => [26.0, 0.0, 0.0, 0.0],
+            },
         };
         self.queue.write_buffer(&self.globals, 0, bytemuck::bytes_of(&globals));
 
@@ -802,6 +928,13 @@ impl Renderer {
                 pass.set_vertex_buffer(0, mesh.vertices.slice(..));
                 pass.set_index_buffer(mesh.indices.slice(..), wgpu::IndexFormat::Uint32);
                 pass.draw_indexed(0..mesh.count, 0, 0..1);
+            }
+            if studio.is_some() {
+                pass.set_bind_group(1, &self.instance_group, &[(backdrop_slot as u64 * INSTANCE_STRIDE) as u32]);
+                pass.set_bind_group(2, &self.white, &[]);
+                pass.set_vertex_buffer(0, self.backdrop.vertices.slice(..));
+                pass.set_index_buffer(self.backdrop.indices.slice(..), wgpu::IndexFormat::Uint32);
+                pass.draw_indexed(0..self.backdrop.count, 0, 0..1);
             }
         }
         {
@@ -847,6 +980,13 @@ impl Renderer {
                     pass.set_vertex_buffer(0, mesh.vertices.slice(..));
                     pass.set_index_buffer(mesh.indices.slice(..), wgpu::IndexFormat::Uint32);
                     pass.draw_indexed(0..mesh.count, 0, 0..1);
+                }
+                if !transparent && studio.is_some() {
+                    pass.set_bind_group(1, &self.instance_group, &[(backdrop_slot as u64 * INSTANCE_STRIDE) as u32]);
+                    pass.set_bind_group(2, &self.white, &[]);
+                    pass.set_vertex_buffer(0, self.backdrop.vertices.slice(..));
+                    pass.set_index_buffer(self.backdrop.indices.slice(..), wgpu::IndexFormat::Uint32);
+                    pass.draw_indexed(0..self.backdrop.count, 0, 0..1);
                 }
             }
         }

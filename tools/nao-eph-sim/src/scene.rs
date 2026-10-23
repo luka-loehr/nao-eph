@@ -161,9 +161,20 @@ impl Scene {
         walk(self, self.root, Mat4::IDENTITY, target)
     }
 
+    /// Only what hangs below `node`, e.g. one robot for the studio view.
+    pub fn draws_under(&self, node: usize) -> Vec<Draw> {
+        let Some(world) = self.world_matrix_of(node) else { return Vec::new() };
+        let parent = world * self.nodes[node].local().inverse();
+        self.draws_from(node, parent)
+    }
+
     pub fn draws(&self) -> Vec<Draw> {
+        self.draws_from(self.root, Mat4::IDENTITY)
+    }
+
+    fn draws_from(&self, start: usize, parent: Mat4) -> Vec<Draw> {
         let mut out = Vec::new();
-        let mut stack = vec![(self.root, Mat4::IDENTITY, 0u32, false, false)];
+        let mut stack = vec![(start, parent, 0u32, false, false)];
         while let Some((node, parent, depth, cutaway, roof)) = stack.pop() {
             // Guards against USE cycles.
             if depth > 64 {

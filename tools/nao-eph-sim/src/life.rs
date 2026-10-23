@@ -9,7 +9,11 @@ use crate::{
 use glam::{Mat4, Vec2, Vec3};
 use serde_json::{Value, json};
 use std::{
-    sync::{Arc, Mutex, mpsc::Sender},
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicBool, Ordering},
+        mpsc::Sender,
+    },
     thread,
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
@@ -71,6 +75,8 @@ pub fn spawn(
     sim: Arc<Mutex<SimState>>,
     hulk: Arc<Mutex<HulkState>>,
     viewer: Arc<Mutex<Option<Vec3>>>,
+    // In the studio the robot stays on its mark: no wandering or turning steps.
+    studio: Arc<AtomicBool>,
     hulk_tx: Sender<Message>,
 ) {
     thread::spawn(move || {
@@ -154,6 +160,11 @@ pub fn spawn(
 
             if now >= phase_end {
                 let (next, seconds) = match phase {
+                    Phase::Watch if studio.load(Ordering::Relaxed) => match rng.next() {
+                        r if r < 0.5 => (Phase::Glance, rng.range(3.0, 5.0)),
+                        r if r < 0.8 => (Phase::Stretch, 3.0),
+                        _ => (Phase::Squat, 2.5),
+                    },
                     Phase::Watch => match rng.next() {
                         r if r < 0.35 => (Phase::Glance, rng.range(4.0, 6.0)),
                         r if r < 0.75 => (Phase::Wander(free_spot(&mut rng, position)), 20.0),

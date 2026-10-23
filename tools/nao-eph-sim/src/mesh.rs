@@ -274,3 +274,41 @@ pub fn indexed_face_set(
     }
     mesh
 }
+
+/// A photo-studio cyclorama: floor curving up into a back wall without a visible corner.
+/// The subject stands at the origin looking along +x; the wall is behind it at negative x.
+pub fn cyclorama() -> Mesh {
+    const FLOOR_FRONT: f32 = 6.0;
+    const COVE_START: f32 = -2.2;
+    const RADIUS: f32 = 1.4;
+    const TOP: f32 = 7.0;
+    const HALF_WIDTH: f32 = 6.0;
+    // Profile in the x/z plane, from the front of the floor to the top of the wall.
+    let mut profile = vec![Vec2::new(FLOOR_FRONT, 0.0), Vec2::new(COVE_START, 0.0)];
+    for i in 1..=16 {
+        let a = -PI / 2.0 - (PI / 2.0) * i as f32 / 16.0;
+        profile.push(Vec2::new(COVE_START + RADIUS * a.cos(), RADIUS + RADIUS * a.sin()));
+    }
+    profile.push(Vec2::new(COVE_START - RADIUS, TOP));
+    let mut mesh = Mesh::default();
+    let mut length = 0.0;
+    for (k, p) in profile.iter().enumerate() {
+        let prev = profile[k.saturating_sub(1)];
+        let next = profile[(k + 1).min(profile.len() - 1)];
+        let t = next - prev;
+        // Normal faces the subject: up on the floor, forward on the wall.
+        let normal = Vec3::new(t.y, 0.0, -t.x).normalize_or_zero();
+        if k > 0 {
+            length += p.distance(prev);
+        }
+        for y in [-HALF_WIDTH, HALF_WIDTH] {
+            mesh.push(Vec3::new(p.x, y, p.y), normal, Vec2::new(y, length));
+        }
+    }
+    // Counter-clockwise seen from the subject, so the lit side is the front face.
+    for k in 0..profile.len() as u32 - 1 {
+        let a = k * 2;
+        mesh.indices.extend_from_slice(&[a, a + 1, a + 2, a + 1, a + 3, a + 2]);
+    }
+    mesh
+}

@@ -14,6 +14,10 @@ struct Globals {
     light_color: array<vec4<f32>, 4>,
     // x: light count, y: width, z: height, w: tan(fov_y / 2)
     params: vec4<f32>,
+    // rgb: fog colour, a: distance where fog starts
+    fog: vec4<f32>,
+    // x: fog falloff distance, y: 1 in the studio (backdrop colour instead of the sky)
+    fog_params: vec4<f32>,
 };
 
 @group(0) @binding(0) var<uniform> globals: Globals;
@@ -140,18 +144,27 @@ fn fs_composite(@builtin(position) frag: vec4<f32>) -> @location(0) vec4<f32> {
     let ambient = load(tex_b, p).rgb;
     let ao = load(tex_c, p).r;
     var color: vec3<f32>;
-    // Nothing drawn here (ambient alpha 0): show the sky, already display-referred.
+    let studio = globals.fog_params.y > 0.5;
+    // Nothing drawn here (ambient alpha 0): the sky, or the studio's haze colour.
     if (load(tex_b, p).a < 0.01) {
-        color = sky_color(frag.xy);
+        color = select(sky_color(frag.xy), globals.fog.rgb, studio);
     } else {
         // AO darkens only bounce light; a touch on direct light grounds contact areas.
         color = direct.rgb * mix(1.0, ao, 0.25) + ambient * ao;
         let exposure = 1.15;
         color = aces(color * exposure);
         // Distance haze: the world fades into the sky's own horizon, so it feels endless.
-        let depth = load(tex_d, p).w;
-        let fog = 1.0 - exp(-pow(max(depth - 16.0, 0.0) / 26.0, 2.0));
-        color = mix(color, sky_color(frag.xy), clamp(fog, 0.0, 1.0));
+        // Nearest depth around the pixel: at silhouettes the MSAA resolve averages the subject
+        // with the far background, which would otherwise fog the edge into a bright halo.
+        var depth = 1e6;
+        for (var y = -1; y <= 1; y++) {
+            for (var x = -1; x <= 1; x++) {
+                depth = min(depth, load(tex_d, p + vec2<i32>(x, y)).w);
+            }
+        }
+        let fog = 1.0 - exp(-pow(max(depth - globals.fog.a, 0.0) / globals.fog_params.x, 2.0));
+        let haze = select(sky_color(frag.xy), globals.fog.rgb, studio);
+        color = mix(color, haze, clamp(fog, 0.0, 1.0));
     }
     // Gentle grade: a little contrast and warmth.
     color = mix(vec3<f32>(dot(color, vec3<f32>(0.2126, 0.7152, 0.0722))), color, 1.06);
