@@ -1,0 +1,647 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/Floor.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/appearances/protos/Parquetry.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/appearances/protos/Roughcast.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/apartment_structure/protos/Wall.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/apartment_structure/protos/Window.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/living_room_furniture/protos/Sofa.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/living_room_furniture/protos/Armchair.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/tables/protos/Desk.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/chairs/protos/OfficeChair.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/computers/protos/Laptop.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/computers/protos/Monitor.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/television/protos/Television.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/plants/protos/PottedTree.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/lights/protos/FloorLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/lights/protos/CeilingLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/balls/protos/SoccerBall.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/toys/protos/RubberDuck.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/toys/protos/PaperBoat.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/factory/containers/protos/WoodenBox.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/apartment_structure/protos/Door.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/apartment_structure/protos/Radiator.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/cabinet/protos/Cabinet.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/plants/protos/FlowerPot.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/appearances/protos/Grass.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/appearances/protos/SlatePavement.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/appearances/protos/StonePavement.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/appearances/protos/RoughOak.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/garden/protos/PicketFence.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/garden/protos/PicketFenceWithDoor.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/garden/protos/Swing.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/garden/protos/Slide.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/garden/protos/TableWithUmbrella.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/garden/protos/Barbecue.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/garden/protos/DogHouse.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/garden/protos/Gnome.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/road/protos/StraightRoadSegment.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/traffic/protos/StreetLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/street_furniture/protos/Mailbox.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/street_furniture/protos/FireHydrant.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/street_furniture/protos/Bench.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/street_furniture/protos/TrashBin.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/buildings/protos/SuburbanHouse.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/buildings/protos/ModernHouse.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/buildings/protos/BungalowStyleHouse.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/buildings/protos/SmallManor.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/buildings/protos/ModernSuburbanHouse.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/trees/protos/Oak.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/trees/protos/Pine.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/trees/protos/Sassafras.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/trees/protos/Cypress.proto"
+EXTERNPROTO "../protos/NAO.proto"
+
+WorldInfo {
+  info [
+    "nao-eph studio: the Lessing-Gymnasium NAO in a bright room with things to play with."
+  ]
+  title "nao-eph studio"
+  # HULKs' walking engine is tuned for a 10 ms step and this foot friction.
+  basicTimeStep 10
+  FPS 30
+  contactProperties [
+    ContactProperties {
+      coulombFriction [
+        0.45
+      ]
+    }
+  ]
+}
+Viewpoint {
+  orientation 0.08 0.02 -0.996 3.05
+  position 2.4 0.25 0.9
+}
+TexturedBackground {
+  texture "noon_sunny_empty"
+}
+TexturedBackgroundLight {
+  texture "noon_sunny_empty"
+}
+Floor {
+  name "ground"
+  size 90 90
+  tileSize 3 3
+  appearance Grass {
+  }
+}
+# The house floor sits a few millimetres above the lawn.
+Floor {
+  translation 0 0 0.003
+  name "house floor"
+  size 6 6
+  tileSize 1 1
+  appearance Parquetry {
+    type "light strip"
+  }
+}
+
+# Back wall behind the robot, with a painting and a TV.
+Wall {
+  translation -3 0 0
+  name "back wall"
+  size 0.1 6 2.8
+  appearance Roughcast {
+    colorOverride 0.86 0.84 0.8
+    textureTransform TextureTransform {
+      scale 6 2.8
+    }
+  }
+}
+# Left wall with a big window.
+Wall {
+  translation -2.25 3 0
+  rotation 0 0 1 1.5708
+  name "left wall a"
+  size 0.1 1.5 2.8
+  appearance Roughcast {
+    colorOverride 0.86 0.84 0.8
+  }
+}
+Window {
+  translation -0.6 3 0
+  rotation 0 0 1 1.5708
+  name "window"
+  size 0.1 1.8 2.8
+  bottomWallHeight 0.5
+  windowHeight 1.8
+  wallAppearance Roughcast {
+    colorOverride 0.86 0.84 0.8
+  }
+}
+Wall {
+  translation 1.65 3 0
+  rotation 0 0 1 1.5708
+  name "left wall b"
+  size 0.1 2.7 2.8
+  appearance Roughcast {
+    colorOverride 0.86 0.84 0.8
+  }
+}
+# Front wall closes the room; the viewer hides whichever wall faces the camera.
+Wall {
+  translation 3 0 0
+  name "front wall"
+  size 0.1 6 2.8
+  appearance Roughcast {
+    colorOverride 0.86 0.84 0.8
+    textureTransform TextureTransform {
+      scale 6 2.8
+    }
+  }
+}
+# Right wall in a calm blue that matches the robot.
+Wall {
+  translation -0.75 -3 0
+  rotation 0 0 1 1.5708
+  name "right wall a"
+  size 0.1 4.5 2.8
+  appearance Roughcast {
+    colorOverride 0.55 0.68 0.85
+    textureTransform TextureTransform {
+      scale 4.5 2.8
+    }
+  }
+}
+Door {
+  translation 2 -3 0
+  rotation 0 0 1 1.5708
+  name "door"
+  size 0.1 1 2.8
+  canBeOpen FALSE
+  frameHeight 2.1
+  wallAppearance Roughcast {
+    colorOverride 0.55 0.68 0.85
+  }
+}
+Wall {
+  translation 2.75 -3 0
+  rotation 0 0 1 1.5708
+  name "right wall b"
+  size 0.1 0.5 2.8
+  appearance Roughcast {
+    colorOverride 0.55 0.68 0.85
+  }
+}
+Radiator {
+  translation -0.6 2.86 0.32
+  rotation 0 0 1 -1.5708
+  name "radiator"
+}
+Cabinet {
+  translation 0.6 -2.72 0
+  rotation 0 0 1 1.5708
+  name "cabinet"
+}
+FlowerPot {
+  translation 2.55 2.55 0
+  name "flower pot"
+}
+# Framed print of the nao-eph banner.
+Pose {
+  translation -2.93 0.9 1.55
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.08 0.08 0.09
+        roughness 0.5
+        metalness 0
+      }
+      geometry Box {
+        size 0.03 1.9 0.68
+      }
+    }
+    Pose {
+      translation 0.017 0 0
+      rotation 0.57735 0.57735 0.57735 2.0944
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColorMap ImageTexture {
+              url [
+                "textures/nao-eph-banner.png"
+              ]
+            }
+            roughness 0.35
+            metalness 0
+          }
+          geometry Plane {
+            size 1.8 0.6
+          }
+        }
+      ]
+    }
+  ]
+}
+Television {
+  translation -2.9 -1.1 1.45
+  name "tv"
+}
+
+# Lounge corner.
+Sofa {
+  translation -2.4 0.9 0
+  name "sofa"
+}
+Armchair {
+  translation -1.6 -2.2 0
+  rotation 0 0 1 2.2
+  name "armchair"
+}
+PottedTree {
+  translation -2.6 2.55 0
+  name "tree"
+}
+FloorLight {
+  translation -2.55 -2.55 0
+  name "floor light"
+  pointLightColor 1 0.82 0.6
+  pointLightIntensity 2
+}
+CeilingLight {
+  translation 0 0 2.8
+  name "ceiling light"
+  pointLightColor 1 0.9 0.78
+  pointLightIntensity 3
+}
+
+# Desk by the window.
+Desk {
+  translation 0.9 2.5 0
+  rotation 0 0 1 -1.5708
+  name "desk"
+}
+OfficeChair {
+  translation 0.9 1.9 0
+  rotation 0 0 1 1.5708
+  name "office chair"
+}
+Laptop {
+  translation 0.75 2.55 0.71
+  rotation 0 0 1 -1.5708
+  name "laptop"
+}
+Monitor {
+  translation 1.25 2.7 0.71
+  rotation 0 0 1 -1.5708
+  name "monitor"
+}
+PaperBoat {
+  translation 0.45 2.45 0.71
+  name "paper boat"
+}
+
+# The robot with toys around.
+# HULKs' NAO V6 (full-detail CAD meshes), driven by hulk_webots as an extern controller.
+NAO {
+  translation 0 0 0.3334
+  rotation 0 0 1 0
+  name "NAO"
+  controller "<extern>"
+  supervisor TRUE
+  secondaryColor 0.07 0.36 0.85
+}
+SoccerBall {
+  translation 0.55 0.45 0.12
+  name "ball"
+}
+RubberDuck {
+  translation 0.45 -0.4 0.02
+  rotation 0 0 1 2.6
+  name "duck"
+}
+WoodenBox {
+  translation -0.7 -0.95 0.15
+  name "box 1"
+  size 0.3 0.3 0.3
+}
+WoodenBox {
+  translation -0.7 -0.95 0.45
+  rotation 0 0 1 0.4
+  name "box 2"
+  size 0.3 0.3 0.3
+}
+WoodenBox {
+  translation -0.35 -1.25 0.1
+  rotation 0 0 1 0.9
+  name "box 3"
+  size 0.2 0.2 0.2
+}
+
+# ---------------------------------------------------------------------------------------------
+# Outside: the NAO's little house, its yard and the street.
+# ---------------------------------------------------------------------------------------------
+
+# Slate gable roof; the viewer hides it when you zoom into the house.
+Solid {
+  translation 0 0 2.8
+  name "roof"
+  children [
+    Pose {
+      translation 0 1.6500 0.7000
+      rotation 1 0 0 -0.4012
+      children [
+        DEF ROOF_PLANE Shape {
+          appearance SlatePavement {
+            textureTransform TextureTransform {
+              scale 4 3
+            }
+          }
+          geometry Box {
+            size 6.8 3.685 0.12
+          }
+        }
+      ]
+    }
+    Pose {
+      translation 0 -1.6500 0.7000
+      rotation 1 0 0 0.4012
+      children [
+        USE ROOF_PLANE
+      ]
+    }
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.86 0.84 0.8
+        roughness 0.9
+        metalness 0
+      }
+      geometry IndexedFaceSet {
+        coord Coordinate {
+          point [
+            3.05 -3.05 0, 3.05 3.05 0, 3.05 0 1.4
+            -3.05 -3.05 0, -3.05 3.05 0, -3.05 0 1.4
+          ]
+        }
+        coordIndex [
+          0 1 2 -1 3 5 4 -1
+        ]
+      }
+    }
+  ]
+}
+# Wooden porch in front of the door and a stone path to the gate.
+Solid {
+  translation 2 -3.85 0.06
+  name "porch"
+  children [
+    Shape {
+      appearance RoughOak {
+      }
+      geometry Box {
+        size 2.4 1.6 0.12
+      }
+    }
+  ]
+}
+Solid {
+  translation 2.3 -6.6 0.012
+  name "garden path"
+  children [
+    Shape {
+      appearance StonePavement {
+        textureTransform TextureTransform {
+          scale 1 4
+        }
+      }
+      geometry Box {
+        size 1.3 5.2 0.024
+      }
+    }
+  ]
+}
+
+# Picket fence around the plot (segments are 1.7 m), with a gate on the path.
+PicketFence {
+  translation -10.05 9.5 0
+  name "fence left"
+  numberOfSegments 11
+}
+PicketFence {
+  translation 11.51 9.5 0
+  name "fence right"
+  numberOfSegments 11
+}
+PicketFence {
+  translation -10.05 9.5 0
+  rotation 0 0 1 1.5708
+  name "fence back"
+  numberOfSegments 13
+}
+PicketFence {
+  translation -10.05 -9.2 0
+  rotation 0 0 1 1.5708
+  name "fence front left"
+  numberOfSegments 6
+}
+PicketFenceWithDoor {
+  translation 4.71 -9.2 0
+  rotation 0 0 1 1.5708
+  name "garden gate"
+}
+PicketFence {
+  translation 4.71 -9.2 0
+  rotation 0 0 1 1.5708
+  name "fence front right"
+  numberOfSegments 4
+}
+
+# Garden.
+Swing {
+  translation -6.5 5.5 0
+  name "swing"
+}
+Slide {
+  translation 6.5 5.5 0
+  rotation 0 0 1 3.1416
+  name "slide"
+}
+TableWithUmbrella {
+  translation 7 -5.5 0
+  name "garden table"
+}
+Barbecue {
+  translation 9.2 -2.5 0
+  rotation 0 0 1 3.1416
+  name "barbecue"
+}
+DogHouse {
+  translation -7.5 -6 0
+  rotation 0 0 1 0.6
+  name "dog house"
+}
+Gnome {
+  translation -4.2 -5.2 0
+  rotation 0 0 1 -1.2
+  name "gnome"
+}
+
+# Street with sidewalks, a zebra crossing and street furniture.
+StraightRoadSegment {
+  translation -45 -15 0.01
+  name "street"
+  width 8
+  numberOfLanes 2
+  rightBorder TRUE
+  leftBorder TRUE
+  startingRoadBorderWidth 1.5
+  endingRoadBorderWidth 1.5
+  length 90
+}
+Mailbox {
+  translation 5.3 -9.9 0.15
+  rotation 0 0 1 -1.5708
+  name "mailbox"
+}
+FireHydrant {
+  translation -3.5 -10.2 0.15
+  name "hydrant"
+}
+Bench {
+  translation -13 -9.9 0.15
+  rotation 0 0 1 -1.5708
+  name "bench"
+}
+TrashBin {
+  translation -11.4 -10.1 0.15
+  name "trash bin"
+}
+StreetLight {
+  translation -30 -10.3 0.15
+  rotation 0 0 1 -1.5708
+  name "street light near 1"
+}
+StreetLight {
+  translation -22.5 -19.7 0.15
+  rotation 0 0 1 1.5708
+  name "street light far 1"
+}
+StreetLight {
+  translation -15 -10.3 0.15
+  rotation 0 0 1 -1.5708
+  name "street light near 2"
+}
+StreetLight {
+  translation -7.5 -19.7 0.15
+  rotation 0 0 1 1.5708
+  name "street light far 2"
+}
+StreetLight {
+  translation 0 -10.3 0.15
+  rotation 0 0 1 -1.5708
+  name "street light near 3"
+}
+StreetLight {
+  translation 7.5 -19.7 0.15
+  rotation 0 0 1 1.5708
+  name "street light far 3"
+}
+StreetLight {
+  translation 15 -10.3 0.15
+  rotation 0 0 1 -1.5708
+  name "street light near 4"
+}
+StreetLight {
+  translation 22.5 -19.7 0.15
+  rotation 0 0 1 1.5708
+  name "street light far 4"
+}
+StreetLight {
+  translation 30 -10.3 0.15
+  rotation 0 0 1 -1.5708
+  name "street light near 5"
+}
+StreetLight {
+  translation 37.5 -19.7 0.15
+  rotation 0 0 1 1.5708
+  name "street light far 5"
+}
+
+# Neighbours across the street and next door.
+SuburbanHouse {
+  translation -26 -33 0
+  rotation 0 0 1 1.5708
+  name "house across 1"
+}
+ModernHouse {
+  translation 0 -34 0
+  rotation 0 0 1 1.5708
+  name "house across 2"
+}
+BungalowStyleHouse {
+  translation 26 -33 0
+  rotation 0 0 1 1.5708
+  name "house across 3"
+}
+SmallManor {
+  translation -30 2 0
+  rotation 0 0 1 -1.5708
+  name "house next door left"
+}
+ModernSuburbanHouse {
+  translation 32 2 0
+  rotation 0 0 1 -1.5708
+  name "house next door right"
+}
+Oak {
+  translation -18 -6 0
+  name "tree 0"
+}
+Pine {
+  translation -20 14 0
+  name "tree 1"
+}
+Oak {
+  translation -40 14 0
+  name "tree 2"
+}
+Sassafras {
+  translation -14 20 0
+  name "tree 3"
+}
+Pine {
+  translation 0 22 0
+  name "tree 4"
+}
+Oak {
+  translation 16 20 0
+  name "tree 5"
+}
+Pine {
+  translation 22 14 0
+  name "tree 6"
+}
+Oak {
+  translation -38 -24 0
+  name "tree 8"
+}
+Pine {
+  translation -12 -26 0
+  name "tree 9"
+}
+Sassafras {
+  translation 12 -25 0
+  name "tree 10"
+}
+Oak {
+  translation 38 -24 0
+  name "tree 11"
+}
+Sassafras {
+  translation -34 30 0
+  name "tree 18"
+}
+Oak {
+  translation 30 32 0
+  name "tree 19"
+}
+Pine {
+  translation 8 36 0
+  name "tree 20"
+}
+Cypress {
+  translation -8 30 0
+  name "tree 21"
+}
