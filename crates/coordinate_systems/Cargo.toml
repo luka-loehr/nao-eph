@@ -1,0 +1,12 @@
+[package]
+name = "coordinate_systems"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+
+[dependencies]
+approx = { workspace = true }
+approx_derive = { workspace = true }
+path_serde = { workspace = true }
+serde = { workspace = true }

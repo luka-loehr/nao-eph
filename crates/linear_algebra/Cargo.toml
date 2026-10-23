@@ -1,0 +1,14 @@
+[package]
+name = "linear_algebra"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+
+[dependencies]
+approx = { workspace = true }
+nalgebra = { workspace = true }
+num-traits = { workspace = true }
+path_serde = { workspace = true }
+serde = { workspace = true }
+simba = { workspace = true }

@@ -1,0 +1,6 @@
+__pycache__/
+videos/
+runs/
+models/
+MUJOCO_LOG.TXT
+result/

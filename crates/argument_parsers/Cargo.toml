@@ -1,0 +1,12 @@
+[package]
+name = "argument_parsers"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+
+[dependencies]
+color-eyre = { workspace = true }
+nao = { workspace = true }
+regex = { workspace = true }
+spl_network_messages = { workspace = true }

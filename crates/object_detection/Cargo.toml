@@ -1,0 +1,25 @@
+[package]
+name = "object_detection"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+
+[dependencies]
+color-eyre = { workspace = true }
+context_attribute = { workspace = true }
+control = { workspace = true }
+coordinate_systems = { workspace = true }
+framework = { workspace = true }
+geometry = { workspace = true }
+hardware = { workspace = true }
+itertools = { workspace = true }
+linear_algebra = { workspace = true }
+nalgebra = { workspace = true }
+ndarray = { workspace = true }
+openvino = { workspace = true }
+ordered-float = { workspace = true }
+projection = { workspace = true }
+serde = { workspace = true }
+spl_network_messages = { workspace = true }
+types = { workspace = true }
