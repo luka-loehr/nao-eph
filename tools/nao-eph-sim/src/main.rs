@@ -518,9 +518,21 @@ impl SimApp {
                             )))
                             .when(mode != View::World, |d| {
                                 let dark = matches!(mode, View::Studio { dark: true });
-                                d.child(toggle_row("dark", "Dark backdrop", dark, true, None).on_click(cx.listener(
-                                    move |this, _, _, cx| this.set_view(View::Studio { dark: !dark }, cx),
-                                )))
+                                d.child(
+                                    div()
+                                        .mx_2()
+                                        .my_1()
+                                        .p(px(2.))
+                                        .flex()
+                                        .rounded_md()
+                                        .bg(rgba(ACCENT))
+                                        .child(segment("light", "Light", !dark).on_click(cx.listener(
+                                            |this, _, _, cx| this.set_view(View::Studio { dark: false }, cx),
+                                        )))
+                                        .child(segment("dark", "Dark", dark).on_click(cx.listener(
+                                            |this, _, _, cx| this.set_view(View::Studio { dark: true }, cx),
+                                        ))),
+                                )
                             })
                             .child(
                                 toggle_row("console", "Console", self.show_console, true, None).on_click(
@@ -628,6 +640,23 @@ fn toggle_row(id: &'static str, label: &'static str, on: bool, enabled: bool, ba
             )
         })
         .when(badge.is_none(), |d| d.child(switch(on, enabled)))
+}
+
+/// One half of a two-way segmented control.
+fn segment(id: &'static str, label: &'static str, active: bool) -> Stateful<Div> {
+    div()
+        .id(id)
+        .flex_1()
+        .h(px(26.))
+        .flex()
+        .items_center()
+        .justify_center()
+        .rounded(px(5.))
+        .text_xs()
+        .cursor_pointer()
+        .when(active, |d| d.bg(rgba(0x3a3a3aff)).text_color(rgba(FOREGROUND)).font_weight(FontWeight::MEDIUM))
+        .when(!active, |d| d.text_color(rgba(MUTED)).hover(|s| s.text_color(rgba(FOREGROUND))))
+        .child(label)
 }
 
 fn switch(on: bool, enabled: bool) -> impl IntoElement {

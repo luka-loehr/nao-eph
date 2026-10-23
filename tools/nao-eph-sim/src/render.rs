@@ -797,7 +797,7 @@ impl Renderer {
             let yaw = facing.y.atan2(facing.x);
             let p = robot.w_axis.truncate();
             let model = Mat4::from_translation(Vec3::new(p.x, p.y, 0.0)) * Mat4::from_rotation_z(yaw);
-            let (color, roughness) = if dark { (Vec3::splat(0.014), 0.6) } else { (Vec3::splat(0.92), 0.7) };
+            let (color, roughness) = if dark { (Vec3::splat(0.014), 0.6) } else { (Vec3::new(0.86, 0.85, 0.83), 0.7) };
             let inst = Instance {
                 model: model.to_cols_array_2d(),
                 normal: model.inverse().transpose().to_cols_array_2d(),
@@ -877,7 +877,7 @@ impl Renderer {
             // In the studio, "sky" is a big overhead softbox: it is what the glossy shell reflects.
             sky: match studio {
                 Some((true, _)) => [0.2, 0.21, 0.23, 0.08],
-                Some((false, _)) => [0.96, 0.96, 0.98, 0.55],
+                Some((false, _)) => [0.96, 0.96, 0.98, 0.4],
                 None => [0.58, 0.66, 0.8, 0.42],
             },
             ground: match studio {
