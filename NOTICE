@@ -1,0 +1,28 @@
+nao-eph
+Copyright (C) 2026 Luka Löhr
+
+This project is a modified version of HULK, the robot control program and
+associated tools of the RoboCup SPL team HULKs:
+
+    https://github.com/HULKs/hulk
+    Copyright (C) 2018-2026 HULKs e.V.
+
+HULK and this modified version are licensed under the GNU General Public
+License, version 3 (see LICENSE). This repository imports HULKs/hulk at the robocup2025 tag
+(62cd1c2184a71cb6a96ab610b47df82042ad04b6), the last HULKs release for the
+NAO; the original history lives in the HULKs repository.
+
+Changes in nao-eph are made by Luka Löhr for the Ephraim project at
+Lessing-Gymnasium Karlsruhe and are recorded in the git history after the
+import commit.
+
+Notice carried over from HULKs:
+
+    When using this software or parts thereof in a RoboCup SPL competition,
+    the usage shall be announced on the RoboCup SPL mailing list (at the time
+    of writing: robocup-nao@lists.robocup.org) at least one month prior to
+    the competition. The announcement shall name which parts of this software
+    are used.
+
+NAO is a trademark of Aldebaran. This project is not affiliated with or
+endorsed by Aldebaran, HULKs e.V. or OpenAI.
