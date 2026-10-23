@@ -18,7 +18,7 @@
 - **Walking, vision and behavior** – inherited from HULKs, a competitive RoboCup SPL team
 - **nao-eph app** – a native macOS app with Webots and HULKs built in: the NAO lives in its own house, or poses in a light or dark studio
 - **Life mode** – the robot watches you, glances around, wanders, stretches and gets up again after a fall
-- **Live speech (planned)** – real-time voice conversation and tool calling with GPT Realtime
+- **Talk to it** – a German-speaking ElevenLabs voice agent that knows the Ephraim project and moves the robot when you ask (sit down, stand up, arms up, walk, turn, look around)
 
 ---
 
@@ -34,7 +34,13 @@
 
 ## Download
 
-Get **nao-eph.app** for Apple Silicon from [Releases](https://github.com/luka-loehr/nao-eph/releases/latest). Unzip it, move it to Applications and open it with right-click → Open the first time. Nothing else to install.
+### On your NAO
+
+Flash HULKs-OS, run one install script, press the chest button and start talking: **[Put nao-eph on your own NAO](docs/deploy-on-your-nao.md)** (about 20 minutes, NAO6 only).
+
+### On your Mac
+
+Get **nao-eph.app** for Apple Silicon from [Releases](https://github.com/luka-loehr/nao-eph/releases/latest). Unzip it, move it to Applications and open it with right-click → Open the first time. Nothing else to install. Switch on **Talk** in the sidebar to talk to the simulated NAO through your Mac's microphone.
 
 To build it yourself, see [`tools/nao-eph-sim`](tools/nao-eph-sim) (`./bundle.sh` with [Webots](https://cyberbotics.com) installed).
 
