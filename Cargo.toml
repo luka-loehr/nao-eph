@@ -5,7 +5,6 @@ members = [
   "crates/argument_parsers",
   "crates/audio",
   "crates/ball_filter",
-  "crates/bevyhavior_simulator",
   "crates/buffered_watch",
   "crates/calibration",
   "crates/code_generation",
@@ -20,7 +19,6 @@ members = [
   "crates/hardware",
   "crates/hula_types",
   "crates/hulk",
-  "crates/hulk_imagine",
   "crates/hulk_manifest",
   "crates/hulk_nao",
   "crates/hulk_replayer",
@@ -46,16 +44,9 @@ members = [
   "crates/types",
   "crates/vision",
   "crates/walking_engine",
-  "tools/annotato",
-  "tools/camera_matrix_extractor",
-  "tools/depp",
-  "tools/fanta",
-  "tools/mio",
   "tools/parameter_tester",
   "tools/pepsi",
   "tools/twix",
-  "tools/vista",
-  "tools/widget_gallery",
 ]
 resolver = "2"
 # services are built independently by yocto
@@ -198,7 +189,6 @@ repository = { path = "crates/repository" }
 reqwest = { version = "0.12.12", features = ["blocking"] }
 rmp-serde = "1.3.0"
 rustfft = "6.2.0"
-scenario = { path = "crates/scenario" }
 semver = "1.0.25"
 serde = { version = "1.0.217", features = ["derive", "rc"] }
 serde-transcode = "1.1.1"

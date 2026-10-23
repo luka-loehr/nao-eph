@@ -38,7 +38,6 @@ mod heading {
 lazy_static! {
     pub static ref MANIFEST_PATHS: HashMap<&'static str, &'static str> = {
         HashMap::from([
-            ("imagine", "crates/hulk_imagine"),
             ("nao", "crates/hulk_nao"),
             ("replayer", "crates/hulk_replayer"),
             ("webots", "crates/hulk_webots"),
@@ -46,16 +45,9 @@ lazy_static! {
             ("breeze", "services/breeze"),
             ("hula", "services/hula"),
             ("power-panic", "services/power-panic"),
-            ("annotato", "tools/annotato"),
-            ("camera_matrix_extractor", "tools/camera_matrix_extractor"),
-            ("depp", "tools/depp"),
-            ("fanta", "tools/fanta"),
-            ("mio", "tools/mio"),
             ("parameter_tester", "tools/parameter_tester"),
             ("pepsi", "tools/pepsi"),
             ("twix", "tools/twix"),
-            ("vista", "tools/vista"),
-            ("widget_gallery", "tools/widget_gallery"),
         ])
     };
 }
