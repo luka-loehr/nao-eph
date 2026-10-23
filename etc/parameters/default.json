@@ -1224,6 +1224,7 @@
     "walk_to_penalty_kick": "Normal"
   },
   "primary_state_filter": {
+    "companion_mode": true,
     "injected_primary_state": null
   },
   "behavior": {
@@ -1234,7 +1235,11 @@
       "MidfielderRight",
       "MidfielderLeft"
     ],
-    "injected_motion_command": null,
+    "injected_motion_command": {
+      "Stand": {
+        "head": "Center"
+      }
+    },
     "role_positions": {
       "defender_aggressive_ring_radius": 2.0,
       "defender_passive_ring_radius": 1.7,

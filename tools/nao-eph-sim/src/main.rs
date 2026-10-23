@@ -290,7 +290,36 @@ struct SimApp {
     drag: Option<(Point<Pixels>, MouseButton)>,
     show_console: bool,
     studio: Arc<AtomicBool>,
+    voice: Option<Voice>,
     _poll: Task<()>,
+}
+
+/// A running conversation with the voice agent.
+struct Voice {
+    status: Arc<nao_eph_voice::Status>,
+    stop: Arc<AtomicBool>,
+}
+
+impl Voice {
+    fn start(actions: Sender<Message>) -> Self {
+        let status = Arc::new(nao_eph_voice::Status::default());
+        let stop = Arc::new(AtomicBool::new(false));
+        let (thread_status, thread_stop) = (status.clone(), stop.clone());
+        thread::spawn(move || {
+            let actions = Mutex::new(actions);
+            let executor = nao_eph_voice::robot::Executor::new(move |command| {
+                let _ = actions.lock().unwrap().send(Message::Motion(command));
+            });
+            nao_eph_voice::converse_forever(nao_eph_voice::AGENT_ID, &executor, &thread_status, &thread_stop);
+        });
+        Self { status, stop }
+    }
+}
+
+impl Drop for Voice {
+    fn drop(&mut self) {
+        self.stop.store(true, Ordering::SeqCst);
+    }
 }
 
 impl SimApp {
@@ -310,6 +339,10 @@ impl SimApp {
                 cx.background_executor().timer(Duration::from_millis(8)).await;
                 ticks += 1;
                 let alive = this.update(cx, |this, cx| {
+                    // Choosing another motion or mode ends the conversation.
+                    if this.voice.is_some() && this.hulk.lock().unwrap().action != Action::Talk {
+                        this.voice = None;
+                    }
                     if this.take_frame() || ticks % 30 == 0 {
                         cx.notify();
                     }
@@ -332,6 +365,7 @@ impl SimApp {
             drag: None,
             show_console: false,
             studio,
+            voice: None,
             _poll: poll,
         }
     }
@@ -498,7 +532,47 @@ impl SimApp {
                                         let _ = this.actions.send(Message::Action(next));
                                     })),
                             )
-                            .child(toggle_row("gpt", "GPT live", false, false, Some("Soon"))),
+                            .child(
+                                toggle_row("talk", "Talk", self.voice.is_some(), hulk_connected, None).on_click(
+                                    cx.listener(|this, _, _, cx| {
+                                        if this.voice.take().is_none() {
+                                            this.hulk.lock().unwrap().action = Action::Talk;
+                                            let _ = this.actions.send(Message::Action(Action::Talk));
+                                            this.voice = Some(Voice::start(this.actions.clone()));
+                                        } else {
+                                            let _ = this.actions.send(Message::Action(Action::Life));
+                                        }
+                                        cx.notify();
+                                    }),
+                                ),
+                            )
+                            .when_some(self.voice.as_ref(), |d, voice| {
+                                let state = if !voice.status.connected.load(Ordering::Relaxed) {
+                                    "Connecting…"
+                                } else if voice.status.speaking.load(Ordering::Relaxed) {
+                                    "Speaking"
+                                } else {
+                                    "Listening – just talk"
+                                };
+                                let line = voice.status.last_line.lock().unwrap().clone();
+                                d.child(
+                                    div()
+                                        .px_3()
+                                        .pt_1()
+                                        .pb_2()
+                                        .flex()
+                                        .flex_col()
+                                        .gap_1()
+                                        .text_xs()
+                                        .child(div().text_color(rgba(BRAND)).child(state))
+                                        .when_some(line, |d, (who, text)| {
+                                            d.child(div().text_color(rgba(MUTED)).child(format!(
+                                                "{}: {text}",
+                                                if who == "you" { "You" } else { "NAO" }
+                                            )))
+                                        }),
+                                )
+                            }),
                     )
                     .child(section_label("View"))
                     .child(
@@ -775,7 +849,14 @@ fn snapshot(world: &Path, out: &Path, action: Option<Action>) -> Result<()> {
         if let Some(action) = action {
             actions.send(Message::Action(action))?;
         }
-        thread::sleep(Duration::from_secs(8));
+        // NAO_EPH_TALK_TEST=1 (with NAO_EPH_VOICE_TEST_WAV): hold a conversation first.
+        let _voice = std::env::var_os("NAO_EPH_TALK_TEST").map(|_| {
+            hulk_state.lock().unwrap().action = Action::Talk;
+            let _ = actions.send(Message::Action(Action::Talk));
+            Voice::start(actions.clone())
+        });
+        let wait = if _voice.is_some() { 30 } else { 8 };
+        thread::sleep(Duration::from_secs(wait));
         let mut renderer = Renderer::new(world.parent().unwrap().to_path_buf())?;
         let (width, height) = (1600, 900);
         let mut pixels = Vec::new();

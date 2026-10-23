@@ -25,12 +25,14 @@ pub enum Action {
     SitDown,
     /// nao-eph's Life mode drives the robot with `Message::Motion`.
     Life,
+    /// Talking to the voice agent, whose tools also arrive as `Message::Motion`.
+    Talk,
 }
 
 /// What the app sends to the HULKs client thread.
 pub enum Message {
     Action(Action),
-    /// A raw `MotionCommand` from a behavior running in the app (Life mode, later the GPT mode).
+    /// A raw `MotionCommand` from a behavior running in the app (Life mode or the voice agent).
     Motion(Value),
     /// Getting up after a fall, sent in every mode because injected commands override HULKs'
     /// own fall recovery.
@@ -60,6 +62,7 @@ impl Action {
             Action::Squat => "Squat",
             Action::SitDown => "Sit down",
             Action::Life => "Life mode",
+            Action::Talk => "Talk",
         }
     }
 
@@ -87,7 +90,7 @@ impl Action {
             Action::Squat => json!("ArmsUpSquat"),
             Action::SitDown => json!({"SitDown": {"head": "Center"}}),
             // Life mode starts by standing; its own commands follow as `Message::Motion`.
-            Action::Life => json!({"Stand": {"head": "Center"}}),
+            Action::Life | Action::Talk => json!({"Stand": {"head": "Center"}}),
         }
     }
 }
@@ -134,7 +137,7 @@ fn run(state: &Arc<Mutex<HulkState>>, messages: &Receiver<Message>) -> anyhow::R
                     state.lock().unwrap().action = action;
                 }
                 Message::Motion(command) => {
-                    if state.lock().unwrap().action == Action::Life {
+                    if matches!(state.lock().unwrap().action, Action::Life | Action::Talk) {
                         write(&mut socket, "parameters.behavior.injected_motion_command", command)?;
                     }
                 }

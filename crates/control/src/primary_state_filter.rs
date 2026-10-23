@@ -30,6 +30,7 @@ pub struct CycleContext {
     has_ground_contact: Input<bool, "has_ground_contact">,
 
     injected_primary_state: Parameter<Option<PrimaryState>, "primary_state_filter.injected_primary_state?">,
+    companion_mode: Parameter<bool, "primary_state_filter.companion_mode">,
     player_number: Parameter<PlayerNumber, "player_number">,
     recorded_primary_states: Parameter<HashSet<PrimaryState>, "recorded_primary_states">,
 
@@ -112,6 +113,14 @@ impl PrimaryStateFilter {
                     *context.has_ground_contact,
                 )
             }
+
+            // nao-eph companion mode: no games, one chest press wakes the robot up for good.
+            (PrimaryState::Unstiff | PrimaryState::Initial | PrimaryState::Finished, _, true, _, None, _)
+                if *context.companion_mode =>
+            {
+                PrimaryState::Playing
+            }
+            (PrimaryState::Playing, _, true, _, None, _) if *context.companion_mode => PrimaryState::Playing,
 
             // non-GameController transitions
             (PrimaryState::Unstiff, _, true, _, None, _) => PrimaryState::Initial,

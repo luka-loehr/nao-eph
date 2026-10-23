@@ -24,6 +24,7 @@ use types::{
     },
     path_obstacles::PathObstacle,
     players::Players,
+    fall_state::FallState,
     primary_state::PrimaryState,
     roles::Role,
     world_state::WorldState,
@@ -109,10 +110,16 @@ impl Behavior {
 
     pub fn cycle(&mut self, mut context: CycleContext) -> Result<MainOutputs> {
         let world_state = context.world_state;
+        // nao-eph drives the robot by injecting motion commands, but only while it is active and
+        // upright: falling and getting up stay with HULKs' own fall protection and stand-up.
         if let Some(command) = &context.parameters.injected_motion_command {
-            return Ok(MainOutputs {
-                motion_command: command.clone().into(),
-            });
+            if world_state.robot.primary_state == PrimaryState::Playing
+                && world_state.robot.fall_state == FallState::Upright
+            {
+                return Ok(MainOutputs {
+                    motion_command: command.clone().into(),
+                });
+            }
         }
 
         if let Some(ball_state) = &world_state.ball {

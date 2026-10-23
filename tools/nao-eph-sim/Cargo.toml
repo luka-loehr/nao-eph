@@ -12,6 +12,7 @@ anyhow = "1"
 bytemuck = { version = "1", features = ["derive"] }
 glam = { version = "0.34", features = ["bytemuck"] }
 gpui = "0.2.2"
+nao_eph_voice = { path = "../../crates/nao_eph_voice" }
 image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
 pollster = "0.4"
 roxmltree = "0.21"

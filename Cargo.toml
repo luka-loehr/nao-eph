@@ -28,6 +28,7 @@ members = [
   "crates/kinematics",
   "crates/linear_algebra",
   "crates/motionfile",
+  "crates/nao_eph_voice",
   "crates/nao",
   "crates/nao_camera",
   "crates/object_detection",

@@ -1,0 +1,14 @@
+[Unit]
+Description=nao-eph voice: talk to the robot through the ElevenLabs agent
+After=hulk.service network-online.target
+Wants=network-online.target
+
+[Service]
+User=nao
+WorkingDirectory=/home/nao/hulk
+ExecStart=/home/nao/hulk/bin/nao-eph-voice
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
