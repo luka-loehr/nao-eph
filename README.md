@@ -22,6 +22,16 @@
 
 ---
 
+## Screenshots
+
+![The NAO at home](docs/assets/screenshots/world.jpg)
+
+| Dark studio | Light studio |
+| --- | --- |
+| ![Dark studio](docs/assets/screenshots/studio-dark.jpg) | ![Light studio](docs/assets/screenshots/studio.jpg) |
+
+---
+
 ## Download
 
 Get **nao-eph.app** for Apple Silicon from [Releases](https://github.com/luka-loehr/nao-eph/releases/latest). Unzip it, move it to Applications and open it with right-click → Open the first time. Nothing else to install.
