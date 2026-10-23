@@ -855,6 +855,12 @@ impl Renderer {
             light_pos[light_count] = [wash.x, wash.y, wash.z, 2.4];
             light_color[light_count] = [wash_strength, wash_strength * 0.97, wash_strength * 0.93, 0.0];
             light_count += 1;
+            // Soft fill from the camera side, slightly low, so the face isn't lost under the visor.
+            let fill = center + forward * 1.4 + Vec3::Z * 0.35;
+            let fill_strength = if dark { 1.1 } else { 0.0 };
+            light_pos[light_count] = [fill.x, fill.y, fill.z, 4.0];
+            light_color[light_count] = [fill_strength, fill_strength, fill_strength * 1.02, 0.0];
+            light_count += 1;
         }
         for light in scene.point_lights.iter().take(if studio.is_some() { 0 } else { MAX_LIGHTS }) {
             let Some(world) = scene.world_matrix_of(light.node) else { continue };
@@ -876,7 +882,7 @@ impl Renderer {
             sun_color,
             // In the studio, "sky" is a big overhead softbox: it is what the glossy shell reflects.
             sky: match studio {
-                Some((true, _)) => [0.2, 0.21, 0.23, 0.08],
+                Some((true, _)) => [0.2, 0.21, 0.23, 0.2],
                 Some((false, _)) => [0.96, 0.96, 0.98, 0.4],
                 None => [0.58, 0.66, 0.8, 0.42],
             },

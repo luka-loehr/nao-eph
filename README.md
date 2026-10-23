@@ -16,8 +16,17 @@
 - **No NAOqi** – talks to the robot's motors and sensors directly through LoLA, so the CPU isn't spent on idle animations
 - **Written in Rust** – one fast, memory-safe codebase instead of NAOqi's C++ and Python 2 services
 - **Walking, vision and behavior** – inherited from HULKs, a competitive RoboCup SPL team
-- **3D simulation** – run the same code on a virtual NAO in [Webots](https://cyberbotics.com), no robot needed
+- **nao-eph app** – a native macOS app with Webots and HULKs built in: the NAO lives in its own house, or poses in a light or dark studio
+- **Life mode** – the robot watches you, glances around, wanders, stretches and gets up again after a fall
 - **Live speech (planned)** – real-time voice conversation and tool calling with GPT Realtime
+
+---
+
+## Download
+
+Get **nao-eph.app** for Apple Silicon from [Releases](https://github.com/luka-loehr/nao-eph/releases/latest). Unzip it, move it to Applications and open it with right-click → Open the first time. Nothing else to install.
+
+To build it yourself, see [`tools/nao-eph-sim`](tools/nao-eph-sim) (`./bundle.sh` with [Webots](https://cyberbotics.com) installed).
 
 ---
 
