@@ -169,8 +169,13 @@ fn fetch_texture(url: &str, base_dir: &std::path::Path) -> Result<image::RgbaIma
     if !url.starts_with("http://") && !url.starts_with("https://") {
         return Ok(image::open(base_dir.join(url))?.to_rgba8());
     }
+    // The app bundle seeds Webots' asset cache (files named by the SHA-1 of their URL), which
+    // holds every texture the world uses, so nothing has to be downloaded.
+    let webots_cache = std::path::Path::new(&std::env::var("HOME").unwrap_or_default())
+        .join("Library/Caches/Cyberbotics/Webots/assets")
+        .join(sha1_smol::Sha1::from(url).digest().to_string());
     let cache = dirs_cache().join(format!("{:016x}", fxhash(url)));
-    let bytes = match std::fs::read(&cache) {
+    let bytes = match std::fs::read(&webots_cache).or_else(|_| std::fs::read(&cache)) {
         Ok(b) => b,
         Err(_) => {
             let b = ureq::get(url).call()?.body_mut().read_to_vec()?;
