@@ -29,6 +29,7 @@ pub struct CycleContext {
         Input<Option<FilteredGameControllerState>, "filtered_game_controller_state?">,
     has_ground_contact: Input<bool, "has_ground_contact">,
 
+    injected_primary_state: Parameter<Option<PrimaryState>, "primary_state_filter.injected_primary_state?">,
     player_number: Parameter<PlayerNumber, "player_number">,
     recorded_primary_states: Parameter<HashSet<PrimaryState>, "recorded_primary_states">,
 
@@ -52,6 +53,14 @@ impl PrimaryStateFilter {
         &mut self,
         context: CycleContext<impl RecordingInterface + SpeakerInterface>,
     ) -> Result<MainOutputs> {
+        // Simulation and debugging can force a state instead of pressing the chest button.
+        if let Some(&state) = context.injected_primary_state {
+            self.last_primary_state = state;
+            return Ok(MainOutputs {
+                primary_state: state.into(),
+            });
+        }
+
         let is_penalized = match context.filtered_game_controller_state {
             Some(game_controller_state) => {
                 game_controller_state.penalties[*context.player_number].is_some()

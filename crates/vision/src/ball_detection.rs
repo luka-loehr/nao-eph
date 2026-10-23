@@ -1,5 +1,8 @@
 use color_eyre::Result;
+#[cfg(target_arch = "x86_64")]
 use compiled_nn::CompiledNN;
+#[cfg(not(target_arch = "x86_64"))]
+use crate::compiled_nn_stub::CompiledNN;
 use nalgebra::Matrix2;
 use serde::{Deserialize, Serialize};
 

@@ -1,0 +1,12 @@
+# Vendored from crates.io webots-bindings 0.8.0 (MIT). Changed: build.rs links the controller library
+# of an installed Webots instead of compiling Webots' C sources, which only worked on Linux.
+[package]
+name = "webots-bindings"
+version = "0.8.0"
+edition = "2021"
+description = "Webots bindings for Rust"
+license = "MIT"
+build = "build.rs"
+
+[build-dependencies]
+bindgen = "0.63"

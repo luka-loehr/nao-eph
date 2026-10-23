@@ -1223,6 +1223,9 @@
     "walk_to_kickoff": "Normal",
     "walk_to_penalty_kick": "Normal"
   },
+  "primary_state_filter": {
+    "injected_primary_state": null
+  },
   "behavior": {
     "optional_roles": [
       "DefenderLeft",

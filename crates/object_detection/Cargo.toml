@@ -7,6 +7,7 @@ homepage.workspace = true
 
 [dependencies]
 color-eyre = { workspace = true }
+log = { workspace = true }
 context_attribute = { workspace = true }
 control = { workspace = true }
 coordinate_systems = { workspace = true }

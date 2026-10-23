@@ -13,6 +13,7 @@ PROTO NAO [
   field  SFBool      supervisor      FALSE  # Is `Robot.supervisor`.
   field  SFBool      synchronization TRUE   # Is `Robot.synchronization`.
   field  SFBool      selfCollision   FALSE  # Is `Robot.selfCollision`.
+  field  SFColor     secondaryColor  0.10 0.12 0.13  # Color of the secondary (pantone 445C) shell parts.
 ]
 {
   Robot {
@@ -51,7 +52,7 @@ PROTO NAO [
       }
       Shape {
         appearance DEF SecondarySkin_pantone445C PBRAppearance {
-          baseColor 0.10 0.12 0.13
+          baseColor IS secondaryColor
           transparency 0.000000
           roughness 0.200000
           metalness 0

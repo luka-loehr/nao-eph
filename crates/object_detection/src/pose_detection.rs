@@ -40,10 +40,14 @@ const STRIDE_FULL: usize = DETECTION_IMAGE_HEIGHT * DETECTION_IMAGE_WIDTH_FULL;
 
 #[derive(Deserialize, Serialize)]
 pub struct PoseDetection {
-    #[serde(skip, default = "deserialize_not_implemented")]
-    network_narrow: CompiledModel,
-    #[serde(skip, default = "deserialize_not_implemented")]
-    network_full: CompiledModel,
+    /// `None` when the OpenVINO runtime is unavailable (e.g. in the macOS simulation).
+    #[serde(skip)]
+    networks: Option<Networks>,
+}
+
+struct Networks {
+    narrow: CompiledModel,
+    full: CompiledModel,
 }
 
 #[context]
@@ -76,72 +80,14 @@ pub struct MainOutputs {
 impl PoseDetection {
     pub fn new(context: CreationContext<impl PathsInterface>) -> Result<Self> {
         let paths = context.hardware_interface.get_paths();
-        let neural_network_folder = paths.neural_networks;
-
-        let model_xml_name_narrow = "yolo11n-pose-ov-narrow.xml";
-        let model_xml_name_full = "yolo11n-pose-ov-full.xml";
-
-        let mut core = Core::new()?;
-        let network_narrow = core
-            .read_model_from_file(
-                neural_network_folder
-                    .join(model_xml_name_narrow)
-                    .to_str()
-                    .wrap_err("failed to get detection model path")?,
-                neural_network_folder
-                    .join(model_xml_name_narrow)
-                    .with_extension("bin")
-                    .to_str()
-                    .wrap_err("failed to get detection weights path")?,
-            )
-            .map_err(|error| match error {
-                GeneralError => eyre!("{error}: possible incomplete OpenVino installation"),
-                _ => eyre!("{error}: failed to create detection network"),
-            })?;
-
-        let number_of_inputs = network_narrow
-            .get_inputs_len()
-            .wrap_err("failed to get number of inputs")?;
-        let output_name = network_narrow.get_output_by_index(0)?.get_name()?;
-        if number_of_inputs != 1 || output_name != EXPECTED_OUTPUT_NAME {
-            bail!(
-                "expected exactly one input and output name to be '{}'",
-                EXPECTED_OUTPUT_NAME
-            );
-        }
-
-        let network_full = core
-            .read_model_from_file(
-                neural_network_folder
-                    .join(model_xml_name_full)
-                    .to_str()
-                    .wrap_err("failed to get detection model path")?,
-                neural_network_folder
-                    .join(model_xml_name_full)
-                    .with_extension("bin")
-                    .to_str()
-                    .wrap_err("failed to get detection weights path")?,
-            )
-            .map_err(|error| match error {
-                GeneralError => eyre!("{error}: possible incomplete OpenVino installation"),
-                _ => eyre!("{error}: failed to create detection network"),
-            })?;
-
-        let number_of_inputs = network_full
-            .get_inputs_len()
-            .wrap_err("failed to get number of inputs")?;
-        let output_name = network_full.get_output_by_index(0)?.get_name()?;
-        if number_of_inputs != 1 || output_name != EXPECTED_OUTPUT_NAME {
-            bail!(
-                "expected exactly one input and output name to be '{}'",
-                EXPECTED_OUTPUT_NAME
-            );
-        }
-
-        Ok(Self {
-            network_narrow: core.compile_model(&network_narrow, DeviceType::CPU)?,
-            network_full: core.compile_model(&network_full, DeviceType::CPU)?,
-        })
+        let networks = match load_networks(&paths.neural_networks) {
+            Ok(networks) => Some(networks),
+            Err(error) => {
+                log::warn!("pose detection disabled: {error:#}");
+                None
+            }
+        };
+        Ok(Self { networks })
     }
 
     pub fn cycle(&mut self, mut context: CycleContext) -> Result<MainOutputs> {
@@ -160,15 +106,16 @@ impl PoseDetection {
         if !behavior_requests_pose_detection && !context.override_pose_detection {
             return Ok(MainOutputs::default());
         };
+        let Some(networks) = self.networks.as_mut() else {
+            return Ok(MainOutputs::default());
+        };
 
         let image = context.image;
 
         let mut infer_request = match image_size_used_for_detection {
             DetectionRegion::Narrow => {
-                let mut tensor = Tensor::new(
-                    ElementType::F32,
-                    &self.network_narrow.get_input()?.get_shape()?,
-                )?;
+                let mut tensor =
+                    Tensor::new(ElementType::F32, &networks.narrow.get_input()?.get_shape()?)?;
                 {
                     let earlier = SystemTime::now();
 
@@ -185,15 +132,13 @@ impl PoseDetection {
                     });
                 }
 
-                let mut infer_request = self.network_narrow.create_infer_request()?;
+                let mut infer_request = networks.narrow.create_infer_request()?;
                 infer_request.set_input_tensor(&tensor)?;
                 infer_request
             }
             DetectionRegion::Full => {
-                let mut tensor = Tensor::new(
-                    ElementType::F32,
-                    &self.network_full.get_input()?.get_shape()?,
-                )?;
+                let mut tensor =
+                    Tensor::new(ElementType::F32, &networks.full.get_input()?.get_shape()?)?;
                 {
                     let earlier = SystemTime::now();
 
@@ -210,7 +155,7 @@ impl PoseDetection {
                     });
                 }
 
-                let mut infer_request = self.network_full.create_infer_request()?;
+                let mut infer_request = networks.full.create_infer_request()?;
                 infer_request.set_input_tensor(&tensor)?;
                 infer_request
             }
@@ -347,4 +292,71 @@ fn non_maximum_suppression(
     }
 
     poses
+}
+
+fn load_networks(neural_network_folder: &std::path::Path) -> Result<Networks> {
+    let model_xml_name_narrow = "yolo11n-pose-ov-narrow.xml";
+    let model_xml_name_full = "yolo11n-pose-ov-full.xml";
+
+    let mut core = Core::new()?;
+    let network_narrow = core
+        .read_model_from_file(
+            neural_network_folder
+                .join(model_xml_name_narrow)
+                .to_str()
+                .wrap_err("failed to get detection model path")?,
+            neural_network_folder
+                .join(model_xml_name_narrow)
+                .with_extension("bin")
+                .to_str()
+                .wrap_err("failed to get detection weights path")?,
+        )
+        .map_err(|error| match error {
+            GeneralError => eyre!("{error}: possible incomplete OpenVino installation"),
+            _ => eyre!("{error}: failed to create detection network"),
+        })?;
+
+    let number_of_inputs = network_narrow
+        .get_inputs_len()
+        .wrap_err("failed to get number of inputs")?;
+    let output_name = network_narrow.get_output_by_index(0)?.get_name()?;
+    if number_of_inputs != 1 || output_name != EXPECTED_OUTPUT_NAME {
+        bail!(
+            "expected exactly one input and output name to be '{}'",
+            EXPECTED_OUTPUT_NAME
+        );
+    }
+
+    let network_full = core
+        .read_model_from_file(
+            neural_network_folder
+                .join(model_xml_name_full)
+                .to_str()
+                .wrap_err("failed to get detection model path")?,
+            neural_network_folder
+                .join(model_xml_name_full)
+                .with_extension("bin")
+                .to_str()
+                .wrap_err("failed to get detection weights path")?,
+        )
+        .map_err(|error| match error {
+            GeneralError => eyre!("{error}: possible incomplete OpenVino installation"),
+            _ => eyre!("{error}: failed to create detection network"),
+        })?;
+
+    let number_of_inputs = network_full
+        .get_inputs_len()
+        .wrap_err("failed to get number of inputs")?;
+    let output_name = network_full.get_output_by_index(0)?.get_name()?;
+    if number_of_inputs != 1 || output_name != EXPECTED_OUTPUT_NAME {
+        bail!(
+            "expected exactly one input and output name to be '{}'",
+            EXPECTED_OUTPUT_NAME
+        );
+    }
+
+    Ok(Networks {
+        narrow: core.compile_model(&network_narrow, DeviceType::CPU)?,
+        full: core.compile_model(&network_full, DeviceType::CPU)?,
+    })
 }

@@ -1,3 +1,5 @@
+#[cfg(not(target_arch = "x86_64"))]
+mod compiled_nn_stub;
 pub mod ball_detection;
 pub mod calibration_measurement_provider;
 pub mod camera_matrix_extractor;

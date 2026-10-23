@@ -9,7 +9,6 @@ homepage.workspace = true
 approx = { workspace = true }
 calibration = { workspace = true }
 color-eyre = { workspace = true }
-compiled-nn = { workspace = true }
 context_attribute = { workspace = true }
 coordinate_systems = { workspace = true }
 fast_image_resize = { workspace = true }
@@ -27,3 +26,6 @@ rand_chacha = { workspace = true }
 ransac = { workspace = true }
 serde = { workspace = true }
 types = { workspace = true }
+
+[target.'cfg(target_arch = "x86_64")'.dependencies]
+compiled-nn = { workspace = true }
